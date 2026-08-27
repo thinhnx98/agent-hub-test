@@ -15,6 +15,10 @@
     <section class="bh-panel"><h2>Nhân viên làm gì hôm nay?</h2><div id="bh-staff"></div></section>
     <section class="bh-panel"><h2>Giai đoạn công việc trong ngày</h2><div id="bh-stages"></div></section>
   </div>
+  <div class="bh-two" style="margin-top:14px">
+    <section class="bh-panel"><h2>Case đến hạn chăm sóc ≥7 ngày</h2><div id="bh-due-list" style="max-height:220px;overflow:auto"></div></section>
+    <section class="bh-panel"><h2>Case chưa được chăm sóc</h2><div id="bh-uncared-list" style="max-height:220px;overflow:auto"></div></section>
+  </div>
   <div class="bh-foot" id="bh-status">Đang kết nối dữ liệu ERP…</div>
   <script>
     const root=document.getElementById('bao-hanh-dashboard');
@@ -23,7 +27,9 @@
     function renderStaff(rows){document.getElementById('bh-staff').innerHTML='<div class="table-responsive"><table class="bh-table"><thead><tr><th>Nhân viên</th><th class="bh-num">Report</th><th class="bh-num">Điểm</th><th>Giai đoạn</th></tr></thead><tbody>'+Object.entries(rows||{}).map(([n,x])=>`<tr><td><span class="bh-pill">HCM</span> ${n.replace('Bảo hành - ','')}</td><td class="bh-num">${x.reports}</td><td class="bh-num">${Number(x.points||0).toFixed(1)}</td><td>${Object.entries(x.stages||{}).map(([s,c])=>`${s} (${c})`).join('; ')}</td></tr>`).join('')+'</tbody></table></div>';}
     function renderStages(rows){document.getElementById('bh-stages').innerHTML=Object.entries(rows||{}).map(([s,c])=>`<div class="bh-stage"><span>${s}</span><strong>${c}</strong></div>`).join('');}
     function renderDueStages(rows){document.getElementById('bh-due-stages').innerHTML=Object.entries(rows||{}).map(([s,c])=>`<div class="bh-card"><div class="bh-label">${s}</div><div class="bh-value">${c}</div></div>`).join('');}
+    function renderCaseList(id,rows){document.getElementById(id).innerHTML='<table class="bh-table"><thead><tr><th>Số phiếu</th><th>Nhân viên</th><th>Giai đoạn</th><th class="bh-num">Ngày</th></tr></thead><tbody>'+((rows||[]).map(x=>`<tr><td>${x.name||''}</td><td>${(x.staff||'').replace('Bảo hành - ','')}</td><td>${x.stage||''}</td><td class="bh-num">${x.days??''}</td></tr>`).join('')||'<tr><td colspan="4">Không có dữ liệu</td></tr>')+'</tbody></table>';}
     renderStaff({}); renderStages({}); renderDueStages({});
+    renderCaseList('bh-due-list',[]); renderCaseList('bh-uncared-list',[]);
     const endpoint='https://erp-mcp-thinh.thinhnx98-agent-hub.workers.dev/dashboard';
     const status=document.getElementById('bh-status');
     async function refreshDashboard(){
@@ -40,6 +46,8 @@
         renderStaff(d.staff);
         renderStages(d.reportStages);
         renderDueStages(d.due7ByStage);
+        renderCaseList('bh-due-list',d.due7Cases);
+        renderCaseList('bh-uncared-list',d.uncaredCases);
         status.textContent='Đã cập nhật lúc '+new Date().toLocaleString('vi-VN')+' · dữ liệu live từ ERP';
       }catch(e){ status.textContent='Không lấy được dữ liệu live: '+e.message; }
     }

@@ -15,14 +15,33 @@
     <section class="bh-panel"><h2>Nhân viên làm gì hôm nay?</h2><div id="bh-staff"></div></section>
     <section class="bh-panel"><h2>Giai đoạn công việc trong ngày</h2><div id="bh-stages"></div></section>
   </div>
-  <div class="bh-foot">Cập nhật mẫu: 26/08/2026 · Nút “Làm mới dữ liệu” sẽ yêu cầu Codex truy vấn lại ERP-MCP theo ngày đang chọn.</div>
+  <div class="bh-foot" id="bh-status">Đang kết nối dữ liệu ERP…</div>
   <script>
     const root=document.getElementById('bao-hanh-dashboard');
     const staff=[['Lê Hoàng Lâm',6,32.3,0,'Kiểm tra bộ nhớ (2); Tiếp nhận trực tiếp (2); Kiểm tra PC/laptop/gear (1); Gửi hàng đi TTBH (1)'],['Nguyễn Thanh Long',20,96.8,18,'Chăm sóc khách hàng (18); Thông báo trả sản phẩm (1); Soạn hàng trả khách (1)']];
     const stages=[['Chăm sóc khách hàng',18],['Tiếp nhận trực tiếp',2],['Kiểm tra bộ nhớ, thiết bị lưu trữ, phụ kiện',2],['Kiểm tra PC, Laptop, màn hình, gear',1],['Gửi hàng đi TTBH',1],['Thông báo trả sản phẩm',1],['Soạn hàng trả khách',1]];
     document.getElementById('bh-staff').innerHTML='<div class="table-responsive"><table class="bh-table"><thead><tr><th>Nhân viên</th><th class="bh-num">Report</th><th class="bh-num">Điểm</th><th class="bh-num">Đã CSKH</th><th>Giai đoạn</th></tr></thead><tbody>'+staff.map(x=>`<tr><td><span class="bh-pill">HCM</span> ${x[0]}</td><td class="bh-num">${x[1]}</td><td class="bh-num">${x[2].toFixed(1)}</td><td class="bh-num">${x[3]}</td><td>${x[4]}</td></tr>`).join('')+'</tbody></table></div>';
     document.getElementById('bh-stages').innerHTML=stages.map(x=>`<div class="bh-stage"><span>${x[0]}</span><strong>${x[1]}</strong></div>`).join('');
-    document.getElementById('bh-refresh').addEventListener('click',()=>{const date=document.getElementById('bh-date').value;window.openai?.sendFollowUpMessage?.({title:'Làm mới dashboard bảo hành',prompt:`Hãy truy vấn lại ERP-MCP cho dashboard bảo hành đầu HCM theo ngày ${date}. Cập nhật các số liệu: report theo nhân viên và giai đoạn, tổng điểm, case đến hạn chăm sóc >=7 ngày, case đã chăm sóc trong ngày, và case treo >=14 ngày.`});});
+    const endpoint='https://erp-mcp-thinh.thinhnx98-agent-hub.workers.dev/dashboard';
+    const status=document.getElementById('bh-status');
+    async function refreshDashboard(){
+      const date=document.getElementById('bh-date').value;
+      status.textContent='Đang cập nhật dữ liệu ERP…';
+      try{
+        const r=await fetch(endpoint+'?date='+encodeURIComponent(date),{cache:'no-store'});
+        const d=await r.json();
+        if(!r.ok||d.error) throw new Error(d.error||('HTTP '+r.status));
+        document.getElementById('bh-due7').textContent=d.due7??'—';
+        document.getElementById('bh-cared').textContent=d.caredToday??'—';
+        document.getElementById('bh-due14').textContent=d.due14??'—';
+        document.getElementById('bh-points').textContent=Number(d.points??d.totalPoints??0).toLocaleString('vi-VN',{maximumFractionDigits:1});
+        status.textContent='Đã cập nhật lúc '+new Date().toLocaleString('vi-VN')+' · dữ liệu live từ ERP';
+      }catch(e){ status.textContent='Không lấy được dữ liệu live: '+e.message; }
+    }
+    document.getElementById('bh-refresh').addEventListener('click',refreshDashboard);
+    document.getElementById('bh-date').addEventListener('change',refreshDashboard);
+    refreshDashboard();
+    setInterval(refreshDashboard,60000);
   </script>
 </div>
 

@@ -11,49 +11,20 @@
     <div class="bh-card"><div class="bh-label">Tổng điểm trong ngày</div><div class="bh-value" id="bh-points">129,1</div><div class="bh-context">26 report công việc</div></div>
   </div>
   <section class="bh-panel" style="margin-bottom:14px"><h2>Case đến hạn chăm sóc ≥7 ngày theo giai đoạn</h2><div id="bh-due-stages" class="bh-grid" style="margin:0"></div></section>
-  <div class="bh-two">
-    <section class="bh-panel"><h2>Nhân viên làm gì hôm nay?</h2><div id="bh-staff"></div></section>
-    <section class="bh-panel"><h2>Giai đoạn công việc trong ngày</h2><div id="bh-stages"></div></section>
-  </div>
-  <div class="bh-two" style="margin-top:14px">
-    <section class="bh-panel"><h2>Case đến hạn chăm sóc ≥7 ngày</h2><div id="bh-due-list" style="max-height:220px;overflow:auto"></div></section>
-    <section class="bh-panel"><h2>Case chưa được chăm sóc</h2><div id="bh-uncared-list" style="max-height:220px;overflow:auto"></div></section>
-  </div>
+  <div class="bh-two"><section class="bh-panel"><h2>Nhân viên làm gì hôm nay?</h2><div id="bh-staff"></div></section><section class="bh-panel"><h2>Giai đoạn công việc trong ngày</h2><div id="bh-stages"></div></section></div>
+  <div class="bh-two" style="margin-top:14px"><section class="bh-panel"><h2>Case đến hạn chăm sóc ≥7 ngày</h2><div id="bh-due-list" style="max-height:220px;overflow:auto"></div></section><section class="bh-panel"><h2>Case chưa được chăm sóc</h2><div id="bh-uncared-list" style="max-height:220px;overflow:auto"></div></section></div>
+  <section class="bh-panel" style="margin-top:14px"><h2>Dịch vụ sửa chữa trong tháng</h2><div id="bh-service-summary" class="bh-grid" style="margin:0 0 12px"></div><div class="bh-two"><div><h2>Case chưa xử lý xong</h2><div id="bh-service-open" style="max-height:220px;overflow:auto"></div></div><div><h2>Cảnh báo thiếu kết quả xử lý/POS</h2><div id="bh-service-alerts" style="max-height:220px;overflow:auto"></div></div></div></section>
   <div class="bh-foot" id="bh-status">Đang kết nối dữ liệu ERP…</div>
   <script>
     const root=document.getElementById('bao-hanh-dashboard');
-    const staff=[['Lê Hoàng Lâm',6,32.3,0,'Kiểm tra bộ nhớ (2); Tiếp nhận trực tiếp (2); Kiểm tra PC/laptop/gear (1); Gửi hàng đi TTBH (1)'],['Nguyễn Thanh Long',20,96.8,18,'Chăm sóc khách hàng (18); Thông báo trả sản phẩm (1); Soạn hàng trả khách (1)']];
-    const stages=[['Chăm sóc khách hàng',18],['Tiếp nhận trực tiếp',2],['Kiểm tra bộ nhớ, thiết bị lưu trữ, phụ kiện',2],['Kiểm tra PC, Laptop, màn hình, gear',1],['Gửi hàng đi TTBH',1],['Thông báo trả sản phẩm',1],['Soạn hàng trả khách',1]];
     function renderStaff(rows){document.getElementById('bh-staff').innerHTML='<div class="table-responsive"><table class="bh-table"><thead><tr><th>Nhân viên</th><th class="bh-num">Report</th><th class="bh-num">Điểm</th><th>Giai đoạn</th></tr></thead><tbody>'+Object.entries(rows||{}).map(([n,x])=>`<tr><td><span class="bh-pill">HCM</span> ${n.replace('Bảo hành - ','')}</td><td class="bh-num">${x.reports}</td><td class="bh-num">${Number(x.points||0).toFixed(1)}</td><td>${Object.entries(x.stages||{}).map(([s,c])=>`${s} (${c})`).join('; ')}</td></tr>`).join('')+'</tbody></table></div>';}
     function renderStages(rows){document.getElementById('bh-stages').innerHTML=Object.entries(rows||{}).map(([s,c])=>`<div class="bh-stage"><span>${s}</span><strong>${c}</strong></div>`).join('');}
     function renderDueStages(rows){document.getElementById('bh-due-stages').innerHTML=Object.entries(rows||{}).map(([s,c])=>`<div class="bh-card"><div class="bh-label">${s}</div><div class="bh-value">${c}</div></div>`).join('');}
     function renderCaseList(id,rows){document.getElementById(id).innerHTML='<table class="bh-table"><thead><tr><th>Số phiếu</th><th>Nhân viên</th><th>Giai đoạn</th><th class="bh-num">Ngày</th></tr></thead><tbody>'+((rows||[]).map(x=>{const name=x.name||x.x_name||x.ticket||'';const staff=x.staff||x.x_studio_ktv_xu_ly?.[1]||'';const stage=x.stage||x.x_giai_doan_bh?.[1]||'';const days=x.days??x.x_tongthoigianxuly??'';return `<tr><td>${name}</td><td>${staff.replace('Bảo hành - ','')}</td><td>${stage}</td><td class="bh-num">${days}</td></tr>`}).join('')||'<tr><td colspan="4">Không có dữ liệu</td></tr>')+'</tbody></table>';}
-    renderStaff({}); renderStages({}); renderDueStages({});
-    renderCaseList('bh-due-list',[]); renderCaseList('bh-uncared-list',[]);
-    const endpoint='https://erp-mcp-thinh.thinhnx98-agent-hub.workers.dev/dashboard';
-    const status=document.getElementById('bh-status');
-    async function refreshDashboard(){
-      const date=document.getElementById('bh-date').value;
-      status.textContent='Đang cập nhật dữ liệu ERP…';
-      try{
-        const r=await fetch(endpoint+'?date='+encodeURIComponent(date),{cache:'no-store'});
-        const d=await r.json();
-        if(!r.ok||d.error) throw new Error(d.error||('HTTP '+r.status));
-        document.getElementById('bh-due7').textContent=d.due7??'—';
-        document.getElementById('bh-cared').textContent=d.caredToday??'—';
-        document.getElementById('bh-due14').textContent=d.due14??'—';
-        document.getElementById('bh-points').textContent=Number(d.points??d.totalPoints??0).toLocaleString('vi-VN',{maximumFractionDigits:1});
-        renderStaff(d.staff);
-        renderStages(d.reportStages);
-        renderDueStages(d.due7ByStage);
-        renderCaseList('bh-due-list',d.due7Cases);
-        renderCaseList('bh-uncared-list',d.uncaredCases);
-        status.textContent='Đã cập nhật lúc '+new Date().toLocaleString('vi-VN')+' · dữ liệu live từ ERP';
-      }catch(e){ status.textContent='Không lấy được dữ liệu live: '+e.message; }
-    }
-    document.getElementById('bh-refresh').addEventListener('click',refreshDashboard);
-    // Chỉ truy vấn khi người dùng bấm nút, tránh tạo tải liên tục lên ERP.
-    document.getElementById('bh-date').addEventListener('change',()=>{ status.textContent='Đã chọn ngày '+document.getElementById('bh-date').value+' · bấm “Làm mới dữ liệu” để truy vấn'; });
+    function renderServiceSummary(d){document.getElementById('bh-service-summary').innerHTML=`<div class="bh-card"><div class="bh-label">Tổng case tháng</div><div class="bh-value">${d.total||0}</div></div>`+Object.entries(d.byStage||{}).map(([s,c])=>`<div class="bh-card"><div class="bh-label">${s}</div><div class="bh-value">${c}</div></div>`).join('');}
+    renderStaff({});renderStages({});renderDueStages({});renderCaseList('bh-due-list',[]);renderCaseList('bh-uncared-list',[]);
+    const endpoint='https://erp-mcp-thinh.thinhnx98-agent-hub.workers.dev/dashboard';const status=document.getElementById('bh-status');
+    async function refreshDashboard(){const date=document.getElementById('bh-date').value;status.textContent='Đang cập nhật dữ liệu ERP…';try{const r=await fetch(endpoint+'?date='+encodeURIComponent(date),{cache:'no-store'});const d=await r.json();if(!r.ok||d.error)throw new Error(d.error||('HTTP '+r.status));document.getElementById('bh-due7').textContent=d.due7??'—';document.getElementById('bh-cared').textContent=d.caredToday??'—';document.getElementById('bh-due14').textContent=d.due14??'—';document.getElementById('bh-points').textContent=Number(d.points??d.totalPoints??0).toLocaleString('vi-VN',{maximumFractionDigits:1});renderStaff(d.staff);renderStages(d.reportStages);renderDueStages(d.due7ByStage);renderCaseList('bh-due-list',d.due7Cases);renderCaseList('bh-uncared-list',d.uncaredCases);renderServiceSummary(d.service||{});renderCaseList('bh-service-open',d.service?.unfinishedCases||[]);renderCaseList('bh-service-alerts',d.service?.alerts||[]);status.textContent='Đã cập nhật lúc '+new Date().toLocaleString('vi-VN')+' · dữ liệu live từ ERP';}catch(e){status.textContent='Không lấy được dữ liệu live: '+e.message;}}
+    document.getElementById('bh-refresh').addEventListener('click',refreshDashboard);document.getElementById('bh-date').addEventListener('change',()=>{status.textContent='Đã chọn ngày '+document.getElementById('bh-date').value+' · bấm “Làm mới dữ liệu” để truy vấn';});
   </script>
 </div>
-

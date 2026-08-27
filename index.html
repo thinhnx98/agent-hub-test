@@ -39,9 +39,8 @@
       }catch(e){ status.textContent='Không lấy được dữ liệu live: '+e.message; }
     }
     document.getElementById('bh-refresh').addEventListener('click',refreshDashboard);
-    document.getElementById('bh-date').addEventListener('change',refreshDashboard);
-    refreshDashboard();
-    setInterval(refreshDashboard,60000);
+    // Chỉ truy vấn khi người dùng bấm nút, tránh tạo tải liên tục lên ERP.
+    document.getElementById('bh-date').addEventListener('change',()=>{ status.textContent='Đã chọn ngày '+document.getElementById('bh-date').value+' · bấm “Làm mới dữ liệu” để truy vấn'; });
   </script>
 </div>
 

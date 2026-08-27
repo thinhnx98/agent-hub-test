@@ -10,7 +10,7 @@
     <div class="bh-card"><div class="bh-label">Case treo ≥ 14 ngày</div><div class="bh-value bh-warning" id="bh-due14">43</div><div class="bh-context">chỉ nhân viên đầu HCM</div></div>
     <div class="bh-card"><div class="bh-label">Tổng điểm trong ngày</div><div class="bh-value" id="bh-points">129,1</div><div class="bh-context">26 report công việc</div></div>
   </div>
-  <section class="bh-panel" style="margin-bottom:14px"><h2>Case đến hạn chăm sóc ≥7 ngày theo giai đoạn</h2><div class="bh-grid" style="margin:0"><div class="bh-card"><div class="bh-label">Tiếp nhận</div><div class="bh-value">3</div></div><div class="bh-card"><div class="bh-label">Đã gửi BH</div><div class="bh-value">56</div></div><div class="bh-card"><div class="bh-label">Đã lấy về</div><div class="bh-value">17</div></div></div></section>
+  <section class="bh-panel" style="margin-bottom:14px"><h2>Case đến hạn chăm sóc ≥7 ngày theo giai đoạn</h2><div id="bh-due-stages" class="bh-grid" style="margin:0"></div></section>
   <div class="bh-two">
     <section class="bh-panel"><h2>Nhân viên làm gì hôm nay?</h2><div id="bh-staff"></div></section>
     <section class="bh-panel"><h2>Giai đoạn công việc trong ngày</h2><div id="bh-stages"></div></section>
@@ -20,8 +20,10 @@
     const root=document.getElementById('bao-hanh-dashboard');
     const staff=[['Lê Hoàng Lâm',6,32.3,0,'Kiểm tra bộ nhớ (2); Tiếp nhận trực tiếp (2); Kiểm tra PC/laptop/gear (1); Gửi hàng đi TTBH (1)'],['Nguyễn Thanh Long',20,96.8,18,'Chăm sóc khách hàng (18); Thông báo trả sản phẩm (1); Soạn hàng trả khách (1)']];
     const stages=[['Chăm sóc khách hàng',18],['Tiếp nhận trực tiếp',2],['Kiểm tra bộ nhớ, thiết bị lưu trữ, phụ kiện',2],['Kiểm tra PC, Laptop, màn hình, gear',1],['Gửi hàng đi TTBH',1],['Thông báo trả sản phẩm',1],['Soạn hàng trả khách',1]];
-    document.getElementById('bh-staff').innerHTML='<div class="table-responsive"><table class="bh-table"><thead><tr><th>Nhân viên</th><th class="bh-num">Report</th><th class="bh-num">Điểm</th><th class="bh-num">Đã CSKH</th><th>Giai đoạn</th></tr></thead><tbody>'+staff.map(x=>`<tr><td><span class="bh-pill">HCM</span> ${x[0]}</td><td class="bh-num">${x[1]}</td><td class="bh-num">${x[2].toFixed(1)}</td><td class="bh-num">${x[3]}</td><td>${x[4]}</td></tr>`).join('')+'</tbody></table></div>';
-    document.getElementById('bh-stages').innerHTML=stages.map(x=>`<div class="bh-stage"><span>${x[0]}</span><strong>${x[1]}</strong></div>`).join('');
+    function renderStaff(rows){document.getElementById('bh-staff').innerHTML='<div class="table-responsive"><table class="bh-table"><thead><tr><th>Nhân viên</th><th class="bh-num">Report</th><th class="bh-num">Điểm</th><th>Giai đoạn</th></tr></thead><tbody>'+Object.entries(rows||{}).map(([n,x])=>`<tr><td><span class="bh-pill">HCM</span> ${n.replace('Bảo hành - ','')}</td><td class="bh-num">${x.reports}</td><td class="bh-num">${Number(x.points||0).toFixed(1)}</td><td>${Object.entries(x.stages||{}).map(([s,c])=>`${s} (${c})`).join('; ')}</td></tr>`).join('')+'</tbody></table></div>';}
+    function renderStages(rows){document.getElementById('bh-stages').innerHTML=Object.entries(rows||{}).map(([s,c])=>`<div class="bh-stage"><span>${s}</span><strong>${c}</strong></div>`).join('');}
+    function renderDueStages(rows){document.getElementById('bh-due-stages').innerHTML=Object.entries(rows||{}).map(([s,c])=>`<div class="bh-card"><div class="bh-label">${s}</div><div class="bh-value">${c}</div></div>`).join('');}
+    renderStaff({}); renderStages({}); renderDueStages({});
     const endpoint='https://erp-mcp-thinh.thinhnx98-agent-hub.workers.dev/dashboard';
     const status=document.getElementById('bh-status');
     async function refreshDashboard(){
@@ -35,6 +37,9 @@
         document.getElementById('bh-cared').textContent=d.caredToday??'—';
         document.getElementById('bh-due14').textContent=d.due14??'—';
         document.getElementById('bh-points').textContent=Number(d.points??d.totalPoints??0).toLocaleString('vi-VN',{maximumFractionDigits:1});
+        renderStaff(d.staff);
+        renderStages(d.reportStages);
+        renderDueStages(d.due7ByStage);
         status.textContent='Đã cập nhật lúc '+new Date().toLocaleString('vi-VN')+' · dữ liệu live từ ERP';
       }catch(e){ status.textContent='Không lấy được dữ liệu live: '+e.message; }
     }
